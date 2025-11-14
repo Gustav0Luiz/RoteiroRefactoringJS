@@ -1,14 +1,6 @@
-
-// parei no passo 4
-
-
-
 const { readFileSync } = require('fs');
 
 function gerarFaturaStr (fatura, pecas) {
-    let totalFatura = 0;
-    let creditos = 0;
-    let faturaStr = `Fatura ${fatura.cliente}\n`;
 
     function formatarMoeda(valor) {
       return new Intl.NumberFormat("pt-BR",
@@ -45,7 +37,6 @@ function gerarFaturaStr (fatura, pecas) {
       return total; // Retorna o total calculado para a apresentação
     }
 
-    // função extraída
     function calcularCredito(apre) {
       let creditos = 0;
       creditos += Math.max(apre.audiencia - 30, 0);
@@ -54,19 +45,33 @@ function gerarFaturaStr (fatura, pecas) {
       return creditos;   
     }
 
+    function calcularTotalCreditos() {
+    let totalCreditos = 0;
     for (let apre of fatura.apresentacoes) {
-      const total = calcularTotalApresentacao(apre); 
-      creditos += calcularCredito(apre);
-  
-      // mais uma linha da fatura
-      faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda((total))} (${apre.audiencia} assentos)\n`; 
-      totalFatura += total;
+      totalCreditos += calcularCredito(apre);
     }
-
-    faturaStr += `Valor total: ${formatarMoeda((totalFatura))}\n`;
-    faturaStr += `Créditos acumulados: ${creditos} \n`;
-    return faturaStr;
+    return totalCreditos;
   }
+
+    function calcularTotalFatura() {
+    let totalFatura = 0;
+    for (let apre of fatura.apresentacoes) {
+      totalFatura += calcularTotalApresentacao(apre);
+    }
+    return totalFatura;
+  }
+
+  // corpo principal (após funções aninhadas)
+
+  let faturaStr = `Fatura ${fatura.cliente}\n`;
+  for (let apre of fatura.apresentacoes) {
+      faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda(calcularTotalApresentacao(apre))} (${apre.audiencia} assentos)\n`;
+  }
+  faturaStr += `Valor total: ${formatarMoeda(calcularTotalFatura())}\n`;
+  faturaStr += `Créditos acumulados: ${calcularTotalCreditos()} \n`;
+  return faturaStr;
+  
+} 
 
 const faturas = JSON.parse(readFileSync('./faturas.json'));
 const pecas = JSON.parse(readFileSync('./pecas.json'));
